@@ -1,0 +1,53 @@
+import { EComponentKind, T4DComponentConfig } from '@ws-ui/webform-editor';
+import { Settings } from '@ws-ui/webform-editor';
+import { MdOutlineQrCodeScanner } from 'react-icons/md';
+
+import ScannerSettings, { BasicSettings } from './Scanner.settings';
+
+export default {
+  craft: {
+    displayName: 'Scanner',
+    kind: EComponentKind.BASIC,
+    props: {
+      name: '',
+      classNames: [],
+      events: [],
+    },
+    related: {
+      settings: Settings(ScannerSettings, BasicSettings),
+    },
+  },
+  info: {
+    settings: ScannerSettings,
+    displayName: 'Scanner',
+    exposed: true,
+    icon: MdOutlineQrCodeScanner,
+    events: [
+      {
+        label: 'On Scan Success',
+        value: 'onscansuccess',
+      },
+    ],
+    datasources: {
+      accept: ['string'],
+    },
+  },
+  defaultProps: {
+    fps: 10,
+    qrBoxSize: 250,
+    style: {
+      borderWidth: '1px',
+      borderColor: '#d1d5db',
+      minHeight: '250px',
+      borderRadius: '8px',
+      width: '250px',
+      height: 'fit-content',
+    },
+  },
+} as T4DComponentConfig<IScannerProps>;
+
+export interface IScannerProps extends webforms.ComponentProps {
+  fps: number;
+  qrBoxSize: number;
+  disableFlip?: boolean;
+}
