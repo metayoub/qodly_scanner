@@ -136,7 +136,7 @@ const Scanner: FC<IScannerProps> = ({
   };
 
   return (
-    <div ref={connect} style={style} className={cn(className, classNames)}>
+    <div ref={connect} style={style} className={cn(className, classNames, 'flex flex-col')}>
       <div className="flex p-2 gap-2 items-center">
         <select
           id="camera"
