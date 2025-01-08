@@ -2,7 +2,7 @@
   "app_id": "qodly_f0030a74b0ce6185e87e",
   "name": "qodly-scanner",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.1",
   "type": "module",
   "author": {
     "name": "Qodly Team",
