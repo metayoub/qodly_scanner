@@ -42,6 +42,7 @@ export default {
       borderRadius: '8px',
       width: '250px',
       height: 'fit-content',
+      color: '#3b82f6ff',
     },
   },
 } as T4DComponentConfig<IScannerProps>;

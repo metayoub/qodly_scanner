@@ -146,7 +146,7 @@ const Scanner: FC<IScannerProps> = ({
           className="p-2 w-full appearance-none rounded-md text-base text-gray-900 outline outline-1 outline-gray-300"
         >
           {cameras.map((camera) => (
-            <option key={camera.id} value={camera}>
+            <option key={camera.id} value={camera.id}>
               {camera.label}
             </option>
           ))}
@@ -154,13 +154,10 @@ const Scanner: FC<IScannerProps> = ({
         {isScanning ? (
           <MdStop onClick={stopScanning} className="text-3xl text-red-500 cursor-pointer" />
         ) : (
-          <MdOutlineQrCodeScanner
-            onClick={startScanning}
-            className="text-3xl text-blue-500 cursor-pointer"
-          />
+          <MdOutlineQrCodeScanner onClick={startScanning} className="text-3xl cursor-pointer" />
         )}
       </div>
-      <div id="qr-code-scanner" className="m-2" ref={scannerRef} />
+      <div id="qr-code-scanner" className={isScanning ? 'm-2' : ''} ref={scannerRef} />
     </div>
   );
 };
