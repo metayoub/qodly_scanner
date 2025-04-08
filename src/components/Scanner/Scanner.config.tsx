@@ -33,6 +33,7 @@ export default {
     },
   },
   defaultProps: {
+    scanOnStart: false,
     fps: 10,
     qrBoxSize: 250,
     style: {
@@ -51,4 +52,5 @@ export interface IScannerProps extends webforms.ComponentProps {
   fps: number;
   qrBoxSize: number;
   disableFlip?: boolean;
+  scanOnStart?: boolean;
 }

@@ -7,6 +7,7 @@ import { MdOutlineQrCodeScanner, MdStop } from 'react-icons/md';
 
 const Scanner: FC<IScannerProps> = ({
   fps,
+  scanOnStart,
   qrBoxSize,
   disableFlip,
   style,
@@ -72,10 +73,11 @@ const Scanner: FC<IScannerProps> = ({
   };
 
   useEffect(() => {
-    // laod cameras
+    // load cameras
     Html5Qrcode.getCameras().then((devices) => {
       if (devices?.length) {
         setCameras(devices);
+        setCamId(devices[0]); // automatically set default camera
       }
     });
 
@@ -95,6 +97,13 @@ const Scanner: FC<IScannerProps> = ({
       }
     };
   }, []);
+
+  // automatically start scanning
+  useEffect(() => {
+    if (scanOnStart && camId && !isScanning) {
+      startScanning();
+    }
+  }, [scanOnStart, camId]);
 
   // set camera value from id
   useEffect(() => {
