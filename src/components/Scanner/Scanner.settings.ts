@@ -18,6 +18,12 @@ const commonSettings: TSetting[] = [
     label: 'Disable Flip',
     type: ESetting.CHECKBOX,
   },
+  {
+    key: 'scanOnStart',
+    label: 'Launch on Start',
+    type: ESetting.CHECKBOX,
+    defaultValue: false,
+  },
 ];
 
 const Settings: TSetting[] = [
