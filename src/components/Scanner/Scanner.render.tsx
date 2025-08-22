@@ -1,148 +1,236 @@
 import { useRenderer, useSources } from '@ws-ui/webform-editor';
 import cn from 'classnames';
-import { FC, useCallback, useEffect, useRef, useState } from 'react';
-import { type CameraDevice, Html5Qrcode } from 'html5-qrcode';
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Html5Qrcode, Html5QrcodeScannerState, type CameraDevice } from 'html5-qrcode';
 import { IScannerProps } from './Scanner.config';
 import { MdOutlineQrCodeScanner, MdStop } from 'react-icons/md';
 
+const SCANNER_ELEMENT_ID = 'qr-code-scanner';
+
 const Scanner: FC<IScannerProps> = ({
-  fps,
-  scanOnStart,
-  qrBoxSize,
-  disableFlip,
+  fps = 10,
+  scanOnStart = false,
+  qrBoxSize = 250,
+  disableFlip = false,
   style,
   className,
   classNames = [],
   disabled,
 }) => {
   const { connect, emit } = useRenderer();
+
+  // DOM & SDK refs
   const scannerRef = useRef<HTMLDivElement | null>(null);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+
+  // Auto-start & cancel control
+  const autoStartedRef = useRef(false); // ensure auto-start runs only once per mount
+  const startSeq = useRef(0); // cancel token for in-flight start/resume
+
+  // UI & devices
   const [isScanning, setIsScanning] = useState(false);
+  const [cameras, setCameras] = useState<CameraDevice[]>([]);
   const [camId, setCamId] = useState<CameraDevice | null>(null);
-  const [cameras, setCameras] = useState<any[]>([]);
   const [cameraValue, setCameraValue] = useState<string | null>(null);
+
+  // Data binding
   const {
     sources: { datasource: ds },
   } = useSources();
 
+  // Html5Qrcode config
+  const constraints = useMemo(
+    () => ({ fps, qrbox: qrBoxSize, disableFlip }),
+    [fps, qrBoxSize, disableFlip],
+  );
+
   const onScanSuccess = useCallback(
     async (decodedText: string) => {
-      await ds.setValue(null, decodedText);
-      emit('onscansuccess', {
-        value: decodedText,
-      });
-      html5QrCodeRef.current?.pause(true);
-      setIsScanning(false);
+      try {
+        await ds.setValue(null, decodedText);
+        emit('onscansuccess', { value: decodedText });
+      } finally {
+        // Pause so user can press "Start" to scan again
+        html5QrCodeRef.current?.pause(true);
+        setIsScanning(false);
+      }
     },
     [ds, emit],
   );
 
-  const onScanFailure = (error: string) => {
-    console.error('Failed to start QR scanner:', error);
+  const onScanFailure = useCallback((_error: string) => {
+    // Intentionally quiet; continuous scan errors are noisy.
+  }, []);
+
+  const ensureInstance = () => {
+    let inst = html5QrCodeRef.current;
+    if (!inst) {
+      inst = new Html5Qrcode(SCANNER_ELEMENT_ID);
+      html5QrCodeRef.current = inst;
+    }
+    return inst;
   };
 
-  const startScanning = async () => {
-    if (!scannerRef.current || isScanning || disabled) return;
+  const startScanning = useCallback(async () => {
+    if (!scannerRef.current || disabled) return;
+
+    // Invalidate previous starts and capture this call's token
+    const mySeq = ++startSeq.current;
 
     try {
-      const html5QrCode = new Html5Qrcode(scannerRef.current.id);
-      html5QrCodeRef.current = html5QrCode;
+      const inst = ensureInstance();
+      const state = inst.getState?.();
 
-      await html5QrCode.start(
-        { facingMode: 'environment' }, // Rear camera
-        { fps, qrbox: qrBoxSize, disableFlip },
-        onScanSuccess,
-        onScanFailure,
-      );
-      setIsScanning(true); // Update state to "Stop Scanning"
-    } catch (error) {
-      console.error('Failed to start QR scanner:', error);
-    }
-  };
-
-  const stopScanning = async () => {
-    if (!html5QrCodeRef.current) return;
-
-    try {
-      await html5QrCodeRef.current.stop();
-      await html5QrCodeRef.current.clear();
-      setIsScanning(false); // Update state to "Start Scanning"
-    } catch (error) {
-      console.error('Failed to stop QR scanner:', error);
-    }
-  };
-
-  useEffect(() => {
-    // load cameras
-    Html5Qrcode.getCameras().then((devices) => {
-      if (devices?.length) {
-        setCameras(devices);
-        setCamId(devices[0]); // automatically set default camera
+      // If paused, resume
+      if (state === Html5QrcodeScannerState.PAUSED) {
+        await inst.resume();
+        if (mySeq !== startSeq.current) return; // canceled meanwhile
+        setIsScanning(true);
+        return;
       }
-    });
 
-    // Clean up the scanner on component unmount
-    return () => {
-      if (html5QrCodeRef.current) {
-        if (html5QrCodeRef.current.isScanning) {
-          html5QrCodeRef.current
-            .stop()
-            .then(() => html5QrCodeRef.current?.clear())
-            .catch((error) => {
-              console.error('Failed to stop QR scanner on unmount:', error);
-            });
-        } else {
-          html5QrCodeRef.current.clear();
+      // Already scanning
+      if (state === Html5QrcodeScannerState.SCANNING) {
+        setIsScanning(true);
+        return;
+      }
+
+      // Fresh start
+      const cameraToUse: string | MediaTrackConstraints = camId?.id ?? {
+        facingMode: 'environment',
+      };
+
+      await inst.start(cameraToUse, constraints as any, onScanSuccess, onScanFailure);
+
+      // If Stop was pressed while awaiting permissions, cancel & clean up
+      if (mySeq !== startSeq.current) {
+        await inst.stop().catch(() => {});
+        await inst.clear();
+        return;
+      }
+
+      setIsScanning(true);
+    } catch (err) {
+      console.error('Failed to start QR scanner:', err);
+    }
+  }, [camId, constraints, disabled, onScanFailure, onScanSuccess]);
+
+  const stopScanning = useCallback(async () => {
+    // Cancel any in-flight start/resume and prevent auto-start rerun
+    ++startSeq.current;
+    autoStartedRef.current = true;
+
+    const inst = html5QrCodeRef.current;
+    if (!inst) {
+      setIsScanning(false);
+      return;
+    }
+
+    try {
+      const state = inst.getState?.();
+      if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
+        await inst.stop(); // must stop before clear
+      }
+      await inst.clear();
+    } catch (err) {
+      console.error('Failed to stop QR scanner:', err);
+    } finally {
+      setIsScanning(false);
+    }
+  }, []);
+
+  // Load cameras once
+  useEffect(() => {
+    let mounted = true;
+    Html5Qrcode.getCameras()
+      .then((devices) => {
+        if (!mounted) return;
+        if (devices?.length) {
+          setCameras(devices);
+          setCamId(devices[0]);
         }
+      })
+      .catch((e) => console.error('Failed to list cameras:', e));
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      const inst = html5QrCodeRef.current;
+      if (!inst) return;
+      try {
+        const state = inst.getState?.();
+        if (
+          state === Html5QrcodeScannerState.SCANNING ||
+          state === Html5QrcodeScannerState.PAUSED
+        ) {
+          inst
+            .stop()
+            .then(() => inst.clear())
+            .catch((e) => console.error('Stop on unmount failed:', e));
+        } else {
+          inst.clear();
+        }
+      } catch {
+        inst
+          .stop?.()
+          .then(() => inst.clear())
+          .catch(() => {});
       }
     };
   }, []);
 
-  // automatically start scanning
+  // Auto-start ONCE per mount if requested
   useEffect(() => {
-    if (scanOnStart && camId && !isScanning && !disabled) {
-      startScanning();
-    }
-  }, [scanOnStart, camId]);
+    if (!scanOnStart || !camId || disabled) return;
+    if (autoStartedRef.current) return;
+    autoStartedRef.current = true;
+    startScanning();
+  }, [scanOnStart, camId, disabled, startScanning]);
 
-  // set camera value from id
+  // Keep select value in sync
   useEffect(() => {
-    if (camId) {
-      setCameraValue(camId.id);
-    }
+    if (camId) setCameraValue(camId.id);
   }, [camId]);
 
+  // Handle camera switch
   useEffect(() => {
-    if (cameraValue === null) return;
-    if (cameraValue === camId?.id) {
-      return;
-    }
+    if (cameraValue === null || cameraValue === camId?.id) return;
 
-    const cam = cameras.find((cam) => cam.id === cameraValue);
+    const nextCam = cameras.find((c) => c.id === cameraValue) ?? null;
 
-    if (html5QrCodeRef.current && isScanning) {
-      html5QrCodeRef.current.stop().then(() => {
-        setCamId(cam);
-        html5QrCodeRef.current?.start(
-          cam.id,
-          { fps, qrbox: { width: qrBoxSize, height: qrBoxSize }, disableFlip },
-          (decodedText) => {
-            onScanSuccess(decodedText);
-          },
-          (errorMessage) => {
-            onScanFailure(errorMessage);
-          },
-        );
-      });
-    } else {
-      setCamId(cam);
-    }
-  }, [cameraValue]);
+    const switchCamera = async () => {
+      setCamId(nextCam);
+
+      const inst = html5QrCodeRef.current;
+      if (!inst || !nextCam) return;
+
+      try {
+        const state = inst.getState?.();
+        if (
+          state === Html5QrcodeScannerState.SCANNING ||
+          state === Html5QrcodeScannerState.PAUSED
+        ) {
+          // Cancel any in-flight starts before switching
+          ++startSeq.current;
+          await inst.stop();
+          await inst.start(nextCam.id, constraints as any, onScanSuccess, onScanFailure);
+          setIsScanning(true);
+        }
+        // If not started, we just updated camId; user can press Start later
+      } catch (e) {
+        console.error('Failed to switch camera:', e);
+      }
+    };
+
+    switchCamera();
+  }, [cameraValue, camId, cameras, constraints, onScanFailure, onScanSuccess]);
 
   const handleCameraChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCameraId = event.target.value;
-    setCameraValue(selectedCameraId);
+    setCameraValue(event.target.value);
   };
 
   return (
@@ -167,20 +255,33 @@ const Scanner: FC<IScannerProps> = ({
         >
           {cameras.map((camera) => (
             <option key={camera.id} value={camera.id}>
-              {camera.label}
+              {camera.label || camera.id}
             </option>
           ))}
         </select>
+
         {isScanning ? (
-          <MdStop onClick={stopScanning} className="text-3xl text-red-500 cursor-pointer" />
+          <MdStop
+            onClick={stopScanning}
+            className="text-3xl text-red-500 cursor-pointer"
+            title="Stop scanning"
+          />
         ) : (
           <MdOutlineQrCodeScanner
             onClick={startScanning}
-            className={cn(disabled ? 'cursor-not-allowed' : 'cursor-pointer', 'text-3xl ')}
+            className={cn(disabled ? 'cursor-not-allowed' : 'cursor-pointer', 'text-3xl')}
+            title="Start scanning"
           />
         )}
       </div>
-      <div id="qr-code-scanner" className={isScanning ? 'm-2' : ''} ref={scannerRef} />
+
+      {/* Give the container width so the <video> can size properly */}
+      <div
+        id={SCANNER_ELEMENT_ID}
+        ref={scannerRef}
+        className={cn(isScanning ? 'm-2' : '', 'w-full')}
+        style={{ maxWidth: '640px' }}
+      />
     </div>
   );
 };

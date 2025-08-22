@@ -28,7 +28,9 @@ const Scanner: FC<IScannerProps> = ({ disabled, style, className, classNames = [
         >
           <option>Virtual Camera</option>
         </select>
-        <MdOutlineQrCodeScanner className="text-3xl cursor-pointer" />
+        <MdOutlineQrCodeScanner
+          className={cn(disabled ? 'cursor-not-allowed' : 'cursor-pointer', 'text-3xl')}
+        />
       </div>
 
       <div className="m-2 bg-black flex items-center justify-center grow">
