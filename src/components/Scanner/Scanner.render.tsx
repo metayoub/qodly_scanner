@@ -13,6 +13,7 @@ const Scanner: FC<IScannerProps> = ({
   style,
   className,
   classNames = [],
+  disabled,
 }) => {
   const { connect, emit } = useRenderer();
   const scannerRef = useRef<HTMLDivElement | null>(null);
@@ -42,7 +43,7 @@ const Scanner: FC<IScannerProps> = ({
   };
 
   const startScanning = async () => {
-    if (!scannerRef.current || isScanning) return;
+    if (!scannerRef.current || isScanning || disabled) return;
 
     try {
       const html5QrCode = new Html5Qrcode(scannerRef.current.id);
@@ -100,7 +101,7 @@ const Scanner: FC<IScannerProps> = ({
 
   // automatically start scanning
   useEffect(() => {
-    if (scanOnStart && camId && !isScanning) {
+    if (scanOnStart && camId && !isScanning && !disabled) {
       startScanning();
     }
   }, [scanOnStart, camId]);
@@ -145,14 +146,24 @@ const Scanner: FC<IScannerProps> = ({
   };
 
   return (
-    <div ref={connect} style={style} className={cn(className, classNames, 'flex flex-col')}>
+    <div
+      ref={connect}
+      style={style}
+      className={cn(
+        disabled && 'opacity-50 cursor-not-allowed',
+        className,
+        classNames,
+        'flex flex-col',
+      )}
+    >
       <div className="flex p-2 gap-2 items-center">
         <select
           id="camera"
           name="camera"
           onChange={handleCameraChange}
           value={cameraValue ?? ''}
-          className="p-2 w-full appearance-none rounded-md text-base text-gray-900 outline outline-1 outline-gray-300"
+          className="p-2 w-full appearance-none rounded-md text-base text-gray-900 outline outline-gray-300"
+          disabled={disabled || cameras.length === 0}
         >
           {cameras.map((camera) => (
             <option key={camera.id} value={camera.id}>
@@ -163,7 +174,10 @@ const Scanner: FC<IScannerProps> = ({
         {isScanning ? (
           <MdStop onClick={stopScanning} className="text-3xl text-red-500 cursor-pointer" />
         ) : (
-          <MdOutlineQrCodeScanner onClick={startScanning} className="text-3xl cursor-pointer" />
+          <MdOutlineQrCodeScanner
+            onClick={startScanning}
+            className={cn(disabled ? 'cursor-not-allowed' : 'cursor-pointer', 'text-3xl ')}
+          />
         )}
       </div>
       <div id="qr-code-scanner" className={isScanning ? 'm-2' : ''} ref={scannerRef} />
