@@ -36,6 +36,10 @@ export default {
     scanOnStart: false,
     fps: 10,
     qrBoxSize: 250,
+    showLabels: true,
+    label1: 'Scan with Camera',
+    label2: 'Upload picture',
+    label3: 'Stop',
     style: {
       borderWidth: '1px',
       borderColor: '#d1d5db',
@@ -53,4 +57,9 @@ export interface IScannerProps extends webforms.ComponentProps {
   qrBoxSize: number;
   disableFlip?: boolean;
   scanOnStart?: boolean;
+  showLabels?: boolean;
+  label1?: string;
+  label2?: string;
+  label3?: string;
+  allowedCodeFormats?: [{ format: string }];
 }

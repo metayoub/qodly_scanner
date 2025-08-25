@@ -6,12 +6,35 @@ The Qodly Scanner component is a versatile QR code scanner built using React and
 
 ## Properties
 
-| Name            | Attribute     | Type    | Default | Description                                                                   |
-| --------------- | ------------- | ------- | ------- | ----------------------------------------------------------------------------- |
-| FPS             | `fps`         | number  | - 10    | The frame rate at which the camera captures frames for QR code scanning.      |
-| QR Box Size     | `qrBoxSize`   | number  | 250     | The size of the box within which the QR code is scanned.                      |
-| Disable Flip    | `disableFlip` | boolean | `false` | Whether to disable the camera flip feature (useful for front-facing cameras). |
-| Launch on Start | `scanOnStart` | boolean | `false` | Whether to launch the scanner on component mount.                             |
+| Name               | Attribute            | Type    | Default  | Description                                                                   |
+| ------------------ | -------------------- | ------- | -------- | ----------------------------------------------------------------------------- |
+| fps                | `fps`                | number  | 10       | The frame rate at which the camera captures frames for QR code scanning.      |
+| scanOnStart        | `scanOnStart`        | boolean | false    | Whether to launch the scanner automatically on component mount.               |
+| qrBoxSize          | `qrBoxSize`          | number  | 250      | The size (in px) of the box within which the QR code is scanned.              |
+| disableFlip        | `disableFlip`        | boolean | false    | Whether to disable the camera flip feature (useful for front-facing cameras). |
+| showLabels         | `showLabels`         | boolean | true     | Whether to show button labels (Start, Upload, Stop).                          |
+| label1             | `label1`             | string  | "Start"  | Label for the "Start scanning" button.                                        |
+| label2             | `label2`             | string  | "Upload" | Label for the "Upload image" button.                                          |
+| label3             | `label3`             | string  | "Stop"   | Label for the "Stop scanning" button.                                         |
+| allowedCodeFormats | `allowedCodeFormats` | array   | []       | Array of supported code formats (see Supported Formats).                      |
+
+### UI Features
+
+- **Camera selection:** If multiple cameras are available, a dropdown allows switching between them.
+- **Start/Stop scanning:** Toggle camera scanning with dedicated buttons.
+- **Image upload:** Scan QR/barcodes from an image file using the "Upload" button.
+- **Live preview:** Shows camera or image preview in the scanner area.
+- **Customizable labels:** Button labels can be customized or hidden.
+- **Disabled state:** All controls can be disabled via the `disabled` prop.
+
+### Events
+
+The component emits the following events for integration:
+
+- **onscansuccess**: Triggered when a code is successfully scanned.
+  - Payload: `{ value: string }` (the decoded text)
+- **onscanfailure**: Triggered when scanning an image file fails.
+  - Payload: `{ error: string }`
 
 ## Qodly Source
 
