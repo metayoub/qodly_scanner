@@ -16,7 +16,7 @@ const SCANNER_ELEMENT_ID = 'qr-code-scanner';
 const Scanner: FC<IScannerProps> = ({
   fps = 10,
   scanOnStart = false,
-  qrBoxSize = 250,
+  qrBoxSize = 350,
   disableFlip = false,
   showLabels = true,
   label1,
@@ -384,12 +384,7 @@ const Scanner: FC<IScannerProps> = ({
       {/* Scanner / Preview container.
           - In camera mode: <video> is rendered here by html5-qrcode.
           - In file mode:  selected image preview is rendered here when scanFile(..., true) is used. */}
-      <div
-        id={SCANNER_ELEMENT_ID}
-        ref={scannerRef}
-        className={cn(isScanning ? 'm-2' : '', 'w-full')}
-        style={{ maxWidth: '640px' }}
-      />
+      <div id={SCANNER_ELEMENT_ID} ref={scannerRef} className={cn(isScanning ? 'm-2' : 'w-full')} />
     </div>
   );
 };

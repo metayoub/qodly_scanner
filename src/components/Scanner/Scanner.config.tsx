@@ -35,7 +35,7 @@ export default {
   defaultProps: {
     scanOnStart: false,
     fps: 10,
-    qrBoxSize: 250,
+    qrBoxSize: 350,
     showLabels: true,
     label1: 'Scan with Camera',
     label2: 'Upload picture',
@@ -45,7 +45,7 @@ export default {
       borderColor: '#d1d5db',
       minHeight: '250px',
       borderRadius: '8px',
-      width: '250px',
+      width: '350px',
       height: 'fit-content',
       color: '#3b82f6ff',
     },
