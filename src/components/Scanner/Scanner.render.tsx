@@ -54,13 +54,24 @@ const Scanner: FC<IScannerProps> = ({
   } = useSources();
 
   // Html5Qrcode config
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  // Dynamically adjust qrBoxSize for mobile
+  const effectiveQrBoxSize = useMemo(() => {
+    if (isMobile) {
+      // Use a smaller box for mobile screens
+      return Math.min(window.innerWidth, window.innerHeight, 220);
+    }
+    return qrBoxSize;
+  }, [isMobile, qrBoxSize]);
+
   const constraints = useMemo(
     () => ({
       fps,
-      qrbox: qrBoxSize,
       disableFlip,
+      qrbox: effectiveQrBoxSize,
     }),
-    [fps, qrBoxSize, disableFlip],
+    [fps, effectiveQrBoxSize, disableFlip],
   );
 
   const ensureInstance = () => {
@@ -133,15 +144,37 @@ const Scanner: FC<IScannerProps> = ({
       }
 
       // Fresh start
-      const cameraToUse: string | MediaTrackConstraints = camId?.id ?? {
-        facingMode: 'environment',
-      };
+      // On mobile, prefer facingMode: 'environment' unless user explicitly selects a camera
+      let cameraToUse: string | MediaTrackConstraints;
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-      await inst.start(cameraToUse, constraints as any, onScanSuccess, onScanFailure);
+      if (isMobile && (!cameraValue || cameras.length === 0)) {
+        cameraToUse = { facingMode: 'environment' };
+      } else if (camId?.id) {
+        cameraToUse = camId.id;
+      } else {
+        cameraToUse = { facingMode: 'environment' };
+      }
+
+      // Prepare config for html5-qrcode
+      const config: any = { ...constraints };
+      if (allowedCodeFormats && allowedCodeFormats.length > 0) {
+        config.formatsToSupport = allowedCodeFormats;
+      }
+
+      await inst.start(cameraToUse, config, onScanSuccess, onScanFailure);
 
       if (mySeq !== startSeq.current) {
-        await inst.stop().catch(() => {});
-        await inst.clear();
+        try {
+          await inst.stop();
+        } catch {
+          /* ignore */
+        }
+        try {
+          await inst.clear();
+        } catch {
+          /* ignore */
+        }
         return;
       }
 
@@ -164,9 +197,17 @@ const Scanner: FC<IScannerProps> = ({
     try {
       const state = inst.getState?.();
       if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
-        await inst.stop();
+        try {
+          await inst.stop();
+        } catch {
+          /* ignore iOS internals */
+        }
       }
-      await inst.clear();
+      try {
+        await inst.clear();
+      } catch {
+        /* ignore */
+      }
     } catch (err) {
       console.error('Failed to stop QR scanner:', err);
     } finally {
@@ -283,7 +324,11 @@ const Scanner: FC<IScannerProps> = ({
           state === Html5QrcodeScannerState.PAUSED
         ) {
           ++startSeq.current;
-          await inst.stop();
+          try {
+            await inst.stop();
+          } catch {
+            /* ignore */
+          }
           await inst.start(nextCam.id, constraints as any, onScanSuccess, onScanFailure);
           setIsScanning(true);
         }
