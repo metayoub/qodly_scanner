@@ -16,7 +16,7 @@ const SCANNER_ELEMENT_ID = 'qr-code-scanner';
 const Scanner: FC<IScannerProps> = ({
   fps = 10,
   scanOnStart = false,
-  qrBoxSize = 350,
+  qrBoxSize = 150,
   disableFlip = false,
   showLabels = true,
   label1,

@@ -35,7 +35,7 @@ export default {
   defaultProps: {
     scanOnStart: false,
     fps: 10,
-    qrBoxSize: 350,
+    qrBoxSize: 150,
     showLabels: true,
     label1: 'Scan with Camera',
     label2: 'Upload picture',

@@ -10,7 +10,7 @@ The Qodly Scanner component is a versatile QR code scanner built using React and
 | ------------------ | -------------------- | ------- | -------- | ----------------------------------------------------------------------------- |
 | fps                | `fps`                | number  | 10       | The frame rate at which the camera captures frames for QR code scanning.      |
 | scanOnStart        | `scanOnStart`        | boolean | false    | Whether to launch the scanner automatically on component mount.               |
-| qrBoxSize          | `qrBoxSize`          | number  | 250      | The size (in px) of the box within which the QR code is scanned.              |
+| qrBoxSize          | `qrBoxSize`          | number  | 350      | The size (in px) of the box within which the QR code is scanned.              |
 | disableFlip        | `disableFlip`        | boolean | false    | Whether to disable the camera flip feature (useful for front-facing cameras). |
 | showLabels         | `showLabels`         | boolean | true     | Whether to show button labels (Start, Upload, Stop).                          |
 | label1             | `label1`             | string  | "Start"  | Label for the "Start scanning" button.                                        |

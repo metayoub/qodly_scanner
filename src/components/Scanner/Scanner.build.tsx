@@ -11,6 +11,7 @@ const Scanner: FC<IScannerProps> = ({
   showLabels = true,
   label1,
   label2,
+  qrBoxSize = 150,
   style,
   className,
   classNames = [],
@@ -32,7 +33,7 @@ const Scanner: FC<IScannerProps> = ({
     >
       <div className="flex p-2 gap-2 items-center flex-wrap">
         <select
-          className="p-2 flex-1 min-w-[200px] appearance-none rounded-md text-base text-gray-900 outline outline-gray-300"
+          className="p-2 flex-1 min-w-[150px] appearance-none rounded-md text-base text-gray-900 outline outline-gray-300"
           disabled={disabled}
         >
           <option>Virtual Camera</option>
@@ -61,7 +62,10 @@ const Scanner: FC<IScannerProps> = ({
       </div>
 
       <div className="m-2 bg-black flex items-center justify-center grow">
-        <div className="border-4 border-white w-16 h-16"></div>
+        <div
+          className="border-4 border-white"
+          style={{ width: `${qrBoxSize}px`, height: `${qrBoxSize}px` }}
+        ></div>
       </div>
     </div>
   );

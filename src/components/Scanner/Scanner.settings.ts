@@ -12,6 +12,7 @@ const commonSettings: TSetting[] = [
     key: 'qrBoxSize',
     label: 'QR Box Size',
     type: ESetting.NUMBER_FIELD,
+    defaultValue: 150,
   },
   {
     key: 'disableFlip',
